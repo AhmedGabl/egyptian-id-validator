@@ -2,21 +2,45 @@ import streamlit as st
 from datetime import datetime
 from egyptian_id_validator.validation import validate_id
 
-# Helper function to generate Egyptian National ID
+# Governorate codes and names
+GOVERNORATES = [
+    ("01", "Cairo"),
+    ("02", "Alexandria"),
+    ("03", "Port Said"),
+    ("04", "Suez"),
+    ("11", "Damietta"),
+    ("12", "Dakahlia"),
+    ("13", "Sharkia"),
+    ("14", "Kalyoubia"),
+    ("15", "Kafr El Sheikh"),
+    ("16", "Gharbia"),
+    ("17", "Monoufia"),
+    ("18", "Beheira"),
+    ("19", "Ismailia"),
+    ("21", "Giza"),
+    ("22", "Beni Suef"),
+    ("23", "Fayoum"),
+    ("24", "Minya"),
+    ("25", "Assiut"),
+    ("26", "Sohag"),
+    ("27", "Qena"),
+    ("28", "Aswan"),
+    ("29", "Luxor"),
+    ("31", "Red Sea"),
+    ("32", "New Valley"),
+    ("33", "Matrouh"),
+    ("34", "North Sinai"),
+    ("35", "South Sinai"),
+    ("88", "Foreign"),
+]
+
 def generate_id(birth_date, governorate_code, gender):
-    # Century digit: 2 for 1900s, 3 for 2000s
-    century_digit = "2" if birth_date.year < 2000 else "3"
-    # YYMMDD
+    century_digit = "2" if birth_date.year >= 2000 else "3"
     date_part = birth_date.strftime("%y%m%d")
-    # Governorate code (should be 2 digits)
     gov_code = governorate_code.zfill(2) if governorate_code.isdigit() else "**"
-    # Serial: 4 digits, last digit is gender (odd for male, even for female)
-    # We'll use *** for unknown parts
     serial = "***"
     gender_digit = "1" if gender == "Male" else "2"
-    # Compose ID (without checksum)
     partial_id = f"{century_digit}{date_part}{gov_code}{serial}{gender_digit}"
-    # Checksum: can't generate without full info, so use *
     checksum = "*"
     return partial_id + checksum
 
@@ -39,11 +63,12 @@ if option == "Validate National ID":
             st.warning("Please enter an Egyptian National ID.")
         else:
             result = validate_id(id_number)
-            if result:
+            if isinstance(result, dict) and result.get("valid"):
                 st.success("✅ Valid ID!")
                 st.json(result)
             else:
-                st.error("❌ Invalid ID.")
+                error_msg = result.get("error") if isinstance(result, dict) and "error" in result else "❌ Invalid ID."
+                st.error(error_msg)
 
 elif option == "Generate National ID":
     st.subheader("Generate National ID")
@@ -52,7 +77,9 @@ elif option == "Generate National ID":
         with col1:
             birth_date = st.date_input("Birth Date", min_value=datetime(1900,1,1), max_value=datetime.today())
         with col2:
-            governorate_code = st.text_input("Governorate Code (e.g., 01 for Cairo)", max_chars=2)
+            gov_names = [name for code, name in GOVERNORATES]
+            selected_gov = st.selectbox("Governorate", gov_names)
+            governorate_code = [code for code, name in GOVERNORATES if name == selected_gov][0]
         gender = st.selectbox("Gender", ("Male", "Female"))
         submitted = st.form_submit_button("Generate")
     if submitted:
