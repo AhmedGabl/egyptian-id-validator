@@ -34,16 +34,31 @@ GOVERNORATES = [
     ("88", "Foreign"),
 ]
 
-def generate_id(birth_date, governorate_code, gender):
-    # Century digit: 2 for 1900s, 3 for 2000s
+def calculate_checksum(id13):
+    # Luhn algorithm for Egyptian ID
+    weights = [2, 1] * 7  # 13 digits
+    total = 0
+    for i, digit in enumerate(reversed(id13)):
+        d = int(digit)
+        w = weights[i]
+        prod = d * w
+        if prod > 9:
+            prod = prod // 10 + prod % 10
+        total += prod
+    checksum = (10 - (total % 10)) % 10
+    return str(checksum)
+
+def generate_id(birth_date, governorate_code, serial, gender_digit, calc_checksum=False):
     century_digit = "2" if birth_date.year < 2000 else "3"
     date_part = birth_date.strftime("%y%m%d")
     gov_code = governorate_code.zfill(2)
-    serial = "***"
-    gender_digit = "1" if gender == "Male" else "2"
-    partial_id = f"{century_digit}{date_part}{gov_code}{serial}{gender_digit}"
-    checksum = "*"
-    return partial_id + checksum
+    serial_str = serial.zfill(3)
+    id13 = f"{century_digit}{date_part}{gov_code}{serial_str}{gender_digit}"
+    if calc_checksum:
+        checksum = calculate_checksum(id13)
+    else:
+        checksum = "*"
+    return id13 + checksum
 
 st.set_page_config(page_title="Egyptian National ID Validator & Generator", layout="centered")
 st.title("🇪🇬 Egyptian National ID Validator & Generator")
@@ -65,7 +80,8 @@ if option == "Validate National ID":
         else:
             result = validate_id(id_number)
             if result:
-                st.success("✅ Valid ID!")
+                st.success("✅ The ID is structurally valid!")
+                st.info("Note: This means the ID format and components are correct, but it may not be an officially issued ID.")
                 st.json(result)
             else:
                 st.error("❌ Invalid ID.")
@@ -80,12 +96,30 @@ elif option == "Generate National ID":
             gov_display = [f"{code} - {name}" for code, name in GOVERNORATES]
             gov_selected = st.selectbox("Governorate", gov_display)
             governorate_code = gov_selected.split(" - ")[0]
-        gender = st.selectbox("Gender", ("Male", "Female"))
+        st.markdown("#### Serial and Gender Digit")
+        serial = st.text_input("Enter 3-digit serial (e.g. 123):", max_chars=3, value="001")
+        gender_digit = st.selectbox(
+            "Pick gender digit (odd for Male, even for Female):",
+            ("1", "2", "3", "4", "5", "6", "7", "8", "9"),
+            index=0
+        )
+        calc_checksum = st.checkbox("Calculate checksum digit", value=True)
         submitted = st.form_submit_button("Generate")
     if submitted:
-        generated_id = generate_id(birth_date, governorate_code, gender)
-        st.success("Generated Egyptian National ID:")
-        st.code(generated_id, language="text")
-        st.caption("Fields marked with * are placeholders for unknown/generated parts.")
+        # Only calculate checksum if serial and gender_digit are digits
+        if not (serial.isdigit() and len(serial) == 3 and gender_digit.isdigit()):
+            st.warning("Please enter a valid 3-digit serial and select a gender digit.")
+        else:
+            generated_id = generate_id(birth_date, governorate_code, serial, gender_digit, calc_checksum)
+            st.success("Generated Egyptian National ID:")
+            st.code(generated_id, language="text")
+            st.caption(
+                "The last 5 digits of the ID are:\n"
+                "- The 4 serial digits (3-digit serial + gender digit) are assigned by the Civil Registry. "
+                "You can enter your own serial and pick a gender digit (odd for male, even for female).\n"
+                "- The final digit is a checksum, calculated from all previous digits using the Luhn algorithm. "
+                "Checksum calculation: Multiply each of the first 13 digits by alternating weights of 2 and 1 (from right to left). "
+                "If a product is greater than 9, add its digits. Sum all results. The checksum is the digit that makes the total a multiple of 10."
+            )
 
 st.caption("Built with Streamlit")
