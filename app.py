@@ -2,7 +2,7 @@ import streamlit as st
 from datetime import datetime
 from egyptian_id_validator.validation import validate_id
 
-# Governorate codes and names
+# Complete list of governorates with codes
 GOVERNORATES = [
     ("01", "Cairo"),
     ("02", "Alexandria"),
@@ -14,7 +14,7 @@ GOVERNORATES = [
     ("14", "Kalyoubia"),
     ("15", "Kafr El Sheikh"),
     ("16", "Gharbia"),
-    ("17", "Monoufia"),
+    ("17", "Monufia"),
     ("18", "Beheira"),
     ("19", "Ismailia"),
     ("21", "Giza"),
@@ -35,9 +35,10 @@ GOVERNORATES = [
 ]
 
 def generate_id(birth_date, governorate_code, gender):
-    century_digit = "2" if birth_date.year >= 2000 else "3"
+    # Century digit: 2 for 1900s, 3 for 2000s
+    century_digit = "2" if birth_date.year < 2000 else "3"
     date_part = birth_date.strftime("%y%m%d")
-    gov_code = governorate_code.zfill(2) if governorate_code.isdigit() else "**"
+    gov_code = governorate_code.zfill(2)
     serial = "***"
     gender_digit = "1" if gender == "Male" else "2"
     partial_id = f"{century_digit}{date_part}{gov_code}{serial}{gender_digit}"
@@ -63,12 +64,11 @@ if option == "Validate National ID":
             st.warning("Please enter an Egyptian National ID.")
         else:
             result = validate_id(id_number)
-            if isinstance(result, dict) and result.get("valid"):
+            if result:
                 st.success("✅ Valid ID!")
                 st.json(result)
             else:
-                error_msg = result.get("error") if isinstance(result, dict) and "error" in result else "❌ Invalid ID."
-                st.error(error_msg)
+                st.error("❌ Invalid ID.")
 
 elif option == "Generate National ID":
     st.subheader("Generate National ID")
@@ -77,9 +77,9 @@ elif option == "Generate National ID":
         with col1:
             birth_date = st.date_input("Birth Date", min_value=datetime(1900,1,1), max_value=datetime.today())
         with col2:
-            gov_names = [name for code, name in GOVERNORATES]
-            selected_gov = st.selectbox("Governorate", gov_names)
-            governorate_code = [code for code, name in GOVERNORATES if name == selected_gov][0]
+            gov_display = [f"{code} - {name}" for code, name in GOVERNORATES]
+            gov_selected = st.selectbox("Governorate", gov_display)
+            governorate_code = gov_selected.split(" - ")[0]
         gender = st.selectbox("Gender", ("Male", "Female"))
         submitted = st.form_submit_button("Generate")
     if submitted:
