@@ -16,7 +16,7 @@ A lightweight Streamlit application to validate existing Egyptian national ID nu
 
 1. Select either `Validate National ID` or `Generate National ID` from the sidebar.
 2. For validation, input the 14-digit ID and click "Validate".
-3. For generation (coming soon), enter birth date, governorate code, and gender — implementation pending.
+3. For generation (coming soon), enter birth date, governorate code, and gender — optional serial, checksum.
 
 ---
 
