@@ -13,12 +13,15 @@ option = st.radio(
 if option == "Validate National ID":
     id_number = st.text_input("Enter Egyptian National ID:")
     if st.button("Validate"):
-        result = validate_id(id_number)
-        if result:
-            st.success("Valid ID!")
-            st.json(result)
+        if not id_number:
+            st.warning("Please enter an Egyptian National ID.")
         else:
-            st.error("Invalid ID.")
+            result = validate_id(id_number)
+            if result:
+                st.success("Valid ID!")
+                st.json(result)
+            else:
+                st.error("Invalid ID.")
 
 elif option == "Generate National ID":
     st.write("Enter the following details to generate a National ID:")
