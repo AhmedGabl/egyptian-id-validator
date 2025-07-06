@@ -96,17 +96,36 @@ elif option == "Generate National ID":
             gov_display = [f"{code} - {name}" for code, name in GOVERNORATES]
             gov_selected = st.selectbox("Governorate", gov_display)
             governorate_code = gov_selected.split(" - ")[0]
+        gender = st.selectbox("Gender", ("Male", "Female"))
         st.markdown("#### Serial and Gender Digit")
-        serial = st.text_input("Enter 3-digit serial (e.g. 123):", max_chars=3, value="001")
+        serial = st.text_input(
+            "Enter 3-digit serial (assigned by Civil Registry, e.g. 123):",
+            max_chars=3,
+            value="001",
+            help="This is the unique serial for people born on the same day in the same governorate."
+        )
+        # Suggest gender digit based on gender
+        if gender == "Male":
+            gender_digit_options = ("1", "3", "5", "7", "9")
+        else:
+            gender_digit_options = ("2", "4", "6", "8")
         gender_digit = st.selectbox(
             "Pick gender digit (odd for Male, even for Female):",
-            ("1", "2", "3", "4", "5", "6", "7", "8", "9"),
-            index=0
+            gender_digit_options,
+            index=0,
+            help="This digit should be odd for males and even for females."
         )
-        calc_checksum = st.checkbox("Calculate checksum digit", value=True)
+        calc_checksum = st.checkbox("Calculate checksum digit", value=True, help="Checksum is only calculated if serial and gender digit are valid.")
+        # Live preview
+        preview_id = ""
+        if serial.isdigit() and len(serial) == 3 and gender_digit.isdigit():
+            preview_id = generate_id(birth_date, governorate_code, serial, gender_digit, calc_checksum)
+        else:
+            preview_id = generate_id(birth_date, governorate_code, serial if serial else "***", gender_digit if gender_digit else "*", False)
+        st.markdown("**Live Preview:**")
+        st.code(preview_id, language="text")
         submitted = st.form_submit_button("Generate")
     if submitted:
-        # Only calculate checksum if serial and gender_digit are digits
         if not (serial.isdigit() and len(serial) == 3 and gender_digit.isdigit()):
             st.warning("Please enter a valid 3-digit serial and select a gender digit.")
         else:
