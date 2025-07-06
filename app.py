@@ -52,9 +52,10 @@ def generate_id(birth_date, governorate_code, serial, gender_digit, calc_checksu
     century_digit = "2" if birth_date.year < 2000 else "3"
     date_part = birth_date.strftime("%y%m%d")
     gov_code = governorate_code.zfill(2)
-    serial_str = serial.zfill(3)
-    id13 = f"{century_digit}{date_part}{gov_code}{serial_str}{gender_digit}"
-    if calc_checksum:
+    serial_str = serial.zfill(3) if serial.isdigit() and len(serial) == 3 else "***"
+    gender_digit_str = gender_digit if gender_digit.isdigit() else "*"
+    id13 = f"{century_digit}{date_part}{gov_code}{serial_str}{gender_digit_str}"
+    if calc_checksum and serial.isdigit() and len(serial) == 3 and gender_digit.isdigit():
         checksum = calculate_checksum(id13)
     else:
         checksum = "*"
@@ -101,27 +102,23 @@ elif option == "Generate National ID":
         serial = st.text_input(
             "Enter 3-digit serial (assigned by Civil Registry, e.g. 123):",
             max_chars=3,
-            value="001",
+            value="***",
             help="This is the unique serial for people born on the same day in the same governorate."
         )
         # Suggest gender digit based on gender
         if gender == "Male":
-            gender_digit_options = ("1", "3", "5", "7", "9")
+            gender_digit_options = ("*", "1", "3", "5", "7", "9")
         else:
-            gender_digit_options = ("2", "4", "6", "8")
+            gender_digit_options = ("*", "2", "4", "6", "8")
         gender_digit = st.selectbox(
             "Pick gender digit (odd for Male, even for Female):",
             gender_digit_options,
             index=0,
             help="This digit should be odd for males and even for females."
         )
-        calc_checksum = st.checkbox("Calculate checksum digit", value=True, help="Checksum is only calculated if serial and gender digit are valid.")
+        calc_checksum = st.checkbox("Calculate checksum digit", value=False, help="Checksum is only calculated if serial and gender digit are valid.")
         # Live preview
-        preview_id = ""
-        if serial.isdigit() and len(serial) == 3 and gender_digit.isdigit():
-            preview_id = generate_id(birth_date, governorate_code, serial, gender_digit, calc_checksum)
-        else:
-            preview_id = generate_id(birth_date, governorate_code, serial if serial else "***", gender_digit if gender_digit else "*", False)
+        preview_id = generate_id(birth_date, governorate_code, serial, gender_digit, calc_checksum)
         st.markdown("**Live Preview:**")
         st.code(preview_id, language="text")
         submitted = st.form_submit_button("Generate")
