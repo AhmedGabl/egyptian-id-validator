@@ -141,4 +141,4 @@ elif option == "Generate National ID":
                 "If a product is greater than 9, add its digits. Sum all results. The checksum is the digit that makes the total a multiple of 10."
             )
 
-st.caption("Built with Streamlit")
+# st.caption("Built with Streamlit")
